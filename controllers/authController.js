@@ -2,22 +2,26 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+// REGISTER
 const register = async (req, res) => {
     try {
-        const { firstName, lastName, email, password } = req.body;
+        const { userName, email, password } = req.body;
 
-if (!firstName || !lastName || !email || !password) {
-return res.status(400).json({
-    message: "All fields are required",
+        // Check required fields
+        if (!userName || !email || !password) {
+            return res.status(400).json({
+                message: "All fields are required",
             });
         }
 
+        // Check password length
         if (password.length < 6) {
-        return res.status(400).json({
-             message: "Password must be at least 6 characters",
+            return res.status(400).json({
+                message: "Password must be at least 6 characters",
             });
         }
 
+        // Check existing user
         const existingUser = await User.findOne({
             email: email.toLowerCase().trim(),
         });
@@ -28,30 +32,31 @@ return res.status(400).json({
             });
         }
 
+        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await User.create({
-            firstName,
-            lastName,
+        // Create user
+        const user = await User.create({
+            userName: userName.trim(),
             email: email.toLowerCase().trim(),
             password: hashedPassword,
-            role: "User",
+            role: "user",
         });
 
         res.status(201).json({
             message: "Registration successful",
             user: {
                 id: user._id,
-                firstName: user.firstName,
-                lastName: user.lastName,
+                userName: user.userName,
                 email: user.email,
                 role: user.role,
             },
         });
 
     } catch (error) {
+        console.log("Registration error:", error);
 
-    if (error.code === 11000) {
+        if (error.code === 11000) {
             return res.status(409).json({
                 message: "Email already exists",
             });
@@ -64,6 +69,7 @@ return res.status(400).json({
 };
 
 
+// LOGIN
 const login = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -111,14 +117,14 @@ const login = async (req, res) => {
             token,
             user: {
                 id: user._id,
-                firstName: user.firstName,
-                lastName: user.lastName,
+                userName: user.userName,
                 email: user.email,
                 role: user.role,
             },
         });
 
     } catch (error) {
+        console.log("Login error:", error);
 
         res.status(500).json({
             message: "Login failed",
